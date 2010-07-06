@@ -22,16 +22,16 @@
 # Copyright 2007 Sun Microsystems Inc. All Rights Reserved
 # Portions Copyrighted 2007 Todd W Saxton.
 
-require 'rubygems'
+require "base64"
 require "rexml/document"
 require "rexml/xpath"
 require "openssl"
-require "xmlcanonicalizer"
 require "digest/sha1"
  
 module XMLSecurity
 
   class SignedDocument < REXML::Document
+    include REXML
 
     def validate (idp_cert_fingerprint, logger = nil)
       # get cert from response

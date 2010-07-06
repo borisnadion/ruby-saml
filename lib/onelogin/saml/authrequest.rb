@@ -1,5 +1,3 @@
-require "base64"
-
 module Onelogin::Saml
   class Authrequest
     def create(settings)
