@@ -33,22 +33,13 @@ module XMLSecurity
   class SignedDocument < REXML::Document
     include REXML
 
-    def validate (idp_cert_fingerprint, logger = nil)
-      # get cert from response
-      base64_cert             = self.elements["//ds:X509Certificate"].text
-      cert_text               = Base64.decode64(base64_cert)
-      cert                    = OpenSSL::X509::Certificate.new(cert_text)
-      
-      # check cert matches registered idp cert
-      fingerprint             = Digest::SHA1.hexdigest(cert.to_der)
-      valid_flag              = fingerprint == idp_cert_fingerprint.gsub(":", "").downcase
-      
-      return valid_flag if !valid_flag 
-      
-      validate_doc(base64_cert, logger)
+    def self.cleanup_certificate(cert)
+      cert.gsub("-----BEGIN CERTIFICATE-----", "").gsub("-----END CERTIFICATE-----", "").gsub("\r\n", "").gsub("\r", "").gsub("\n", "")
     end
-    
-    def validate_doc(base64_cert, logger)
+
+    def validate_doc(x509_cert)
+      base64_cert = SignedDocument.cleanup_certificate(x509_cert)
+
       # validate references
       
       # remove signature node
@@ -65,9 +56,7 @@ module XMLSecurity
         hash                  = Base64.encode64(Digest::SHA1.digest(canon_hashed_element)).chomp
         digest_value          = XPath.first(ref, "//ds:DigestValue", {"ds"=>"http://www.w3.org/2000/09/xmldsig#"}).text
         
-        valid_flag            = hash == digest_value 
-        
-        return valid_flag if !valid_flag
+        return false unless hash == digest_value
       end
  
       # verify signature
@@ -84,7 +73,7 @@ module XMLSecurity
       
       valid_flag              = cert.public_key.verify(OpenSSL::Digest::SHA1.new, signature, canon_string)
         
-      return valid_flag
+      valid_flag
     end
    
   end

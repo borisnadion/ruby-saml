@@ -1,26 +1,24 @@
 module Onelogin::Saml
   class Response
+    NAME_ID = "/samlp:Response/saml:Assertion/saml:Subject/saml:NameID"
+
     def initialize(response)
       @response = response
       @document = XMLSecurity::SignedDocument.new(Base64.decode64(@response))
-    end
-    
-    def logger=(val)
-      @logger = val
     end
     
     def settings=(_settings)
       @settings = _settings
     end
     
-    def is_valid?
-      unless @response.blank?
-        @document.validate(@settings.idp_cert_fingerprint, @logger) unless !@settings.idp_cert_fingerprint
-      end
+    def is_valid?(x509_certificate)
+      return false if @response.blank? || x509_certificate.blank?
+
+      @document.validate_doc(x509_certificate) rescue false
     end
 
     def name_id
-      @document.elements["/samlp:Response/saml:Assertion/saml:Subject/saml:NameID"].text
+      @name_id ||= @document.elements[NAME_ID].text
     end
   end
 end
